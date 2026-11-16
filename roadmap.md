@@ -224,3 +224,7 @@
 
 # Outfits do Lawl MMORPG
 - [x] 14 outfits (Villager, Knight, Paladin, Wizard, Amazon, Summoner, Slayer, Primal, Warlock, Sensei, Hunter, Hitman, Voyager, Sublime) com 2 addons cada, redesenhados no estilo do jogo; grátis no guarda-roupa (7 testes passaram, aplicado no jogo).
+
+# Visual 3D dos personagens
+- [x] Personagens e outfits com volume (luz, sombra, brilho e contorno fino), visto de cima com profundidade.
+- [ ] Próximos passos possíveis (aguardando o dono escolher): NPCs da cidade, monstros, chão/paredes.

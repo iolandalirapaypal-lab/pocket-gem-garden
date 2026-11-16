@@ -49,6 +49,48 @@ function rgb(h){h=h.replace("#","");return[0,2,4].map(i=>parseInt(h.slice(i,i+2)
 function mix(a,b,k){const A=rgb(a),B=rgb(b);return"#"+A.map((v,i)=>Math.round(v+(B[i]-v)*k).toString(16).padStart(2,"0")).join("")}
 const dk=(c,k=.3)=>mix(c,"#120c1a",k),lt=(c,k=.28)=>mix(c,"#ffffff",k);
 function canvas(w,h){if(typeof document!=="undefined"&&document.createElement){const c=document.createElement("canvas");c.width=w;c.height=h;return c}return typeof OffscreenCanvas!=="undefined"?new OffscreenCanvas(w,h):null}
+/* Volume "quase 3D": cada área de cor vira uma superfície arredondada iluminada do alto à esquerda
+   (borda clara em cima, sombra embaixo/à direita, brilho suave), com degradê vertical e contorno fino.
+   Feito uma única vez por visual/direção/passo e guardado no cache, então o desenho por quadro continua sendo um drawImage. */
+const HS=4,LX=-.5,LY=-.62,LZ=.6,LN=Math.hypot(LX,LY,LZ);
+function shade3d(base){
+ const w=base.width,h=base.height,g0=base.getContext("2d",{willReadFrequently:true});if(!g0||!g0.getImageData)return null;
+ const src=g0.getImageData(0,0,w,h).data,W=w*HS,H=h*HS,N=W*H,lk=new Int32Array(w*h);
+ for(let i=0;i<w*h;i++)lk[i]=src[i*4+3]<8?-1:(src[i*4]<<16|src[i*4+1]<<8|src[i*4+2]);
+ /* detalhes pequenos (olhos, bochechas, botões) entram no volume da área em volta para o rosto não ficar manchado */
+ const lab=new Int32Array(w*h).fill(-1),shape=lk.slice();let nl=0;
+ for(let i0=0;i0<w*h;i0++){if(lk[i0]<0||lab[i0]>=0)continue;const st=[i0],cells=[];lab[i0]=nl;
+  while(st.length){const i=st.pop();cells.push(i);const x=i%w,y=i/w|0;for(const n of[x>0?i-1:-1,x<w-1?i+1:-1,y>0?i-w:-1,y<h-1?i+w:-1])if(n>=0&&lab[n]<0&&lk[n]===lk[i]){lab[n]=nl;st.push(n)}}
+  if(cells.length<=3){let nb=-1;for(const i of cells){const x=i%w,y=i/w|0;for(const n of[x>0?i-1:-1,x<w-1?i+1:-1,y>0?i-w:-1,y<h-1?i+w:-1])if(n>=0&&lk[n]>=0&&lk[n]!==lk[i]){nb=lk[n];break}if(nb>=0)break}if(nb>=0)for(const i of cells)shape[i]=nb}
+  nl++}
+ const key=new Int32Array(N),col=new Int32Array(N),inside=new Int32Array(N);
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y/HS|0)*w+(x/HS|0),j=y*W+x;key[j]=shape[i];col[j]=lk[i];inside[j]=lk[i]<0?-1:1}
+ /* distância até a borda: de cada área (relevo fino) e do corpo inteiro (volume redondo) */
+ const SQ=1.414,dist=(K,R)=>{const d=new Float32Array(N);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const j=y*W+x,k=K[j];if(k<0){d[j]=0;continue}d[j]=(x===0||y===0||x===W-1||y===H-1||K[j-1]!==k||K[j+1]!==k||K[j-W]!==k||K[j+W]!==k)?.5:1e4}
+  for(let y=1;y<H;y++)for(let x=1;x<W-1;x++){const j=y*W+x,k=K[j];if(k<0)continue;let v=d[j];
+   if(K[j-1]===k&&d[j-1]+1<v)v=d[j-1]+1;if(K[j-W]===k&&d[j-W]+1<v)v=d[j-W]+1;if(K[j-W-1]===k&&d[j-W-1]+SQ<v)v=d[j-W-1]+SQ;if(K[j-W+1]===k&&d[j-W+1]+SQ<v)v=d[j-W+1]+SQ;d[j]=v}
+  for(let y=H-2;y>=0;y--)for(let x=W-2;x>0;x--){const j=y*W+x,k=K[j];if(k<0)continue;let v=d[j];
+   if(K[j+1]===k&&d[j+1]+1<v)v=d[j+1]+1;if(K[j+W]===k&&d[j+W]+1<v)v=d[j+W]+1;if(K[j+W+1]===k&&d[j+W+1]+SQ<v)v=d[j+W+1]+SQ;if(K[j+W-1]===k&&d[j+W-1]+SQ<v)v=d[j+W-1]+SQ;d[j]=v}
+  for(let j=0;j<N;j++){if(K[j]<0)continue;const t=Math.min(1,d[j]/R);d[j]=Math.sqrt(1-(1-t)*(1-t))}return d};
+ const dReg=dist(key,HS*1.3),dSil=dist(inside,HS*3.2),hgt=new Float32Array(N);
+ for(let j=0;j<N;j++)if(key[j]>=0)hgt[j]=dSil[j]*.6+dReg[j]*.4;
+ const hi=canvas(W,H),G=hi&&hi.getContext("2d");if(!G)return null;const img=G.createImageData(W,H),o=img.data;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const j=y*W+x,k=key[j];if(k<0)continue;
+  const hc=hgt[j],hl=x>0&&key[j-1]>=0?hgt[j-1]:0,hr=x<W-1&&key[j+1]>=0?hgt[j+1]:0,hu=y>0&&key[j-W]>=0?hgt[j-W]:0,hd=y<H-1&&key[j+W]>=0?hgt[j+W]:0;
+  const gx=(hr-hl)*3,gy=(hd-hu)*3,nl=Math.hypot(gx,gy,1),dot=(-gx*LX-gy*LY+LZ)/(nl*LN);
+  const lit=.46+.66*dot,vg=1.1-.26*(y/H),sp=Math.max(0,dot-.94)*3,amb=dReg[j]<.4?.86+.14*dReg[j]/.4:1,f=lit*vg*amb,c=col[j];
+  /* luz de contorno fria no lado da sombra, como uma segunda luz atrás do personagem */
+  const rim=dSil[j]<.32&&gx>0&&dot<.55?(1-dSil[j]/.32)*(.55-dot)*70:0;
+  const r=c>>16&255,g=c>>8&255,b=c&255,i=j*4;
+  o[i]=Math.min(255,r*f+sp*255+rim*.55);o[i+1]=Math.min(255,g*f+sp*255+rim*.75);o[i+2]=Math.min(255,b*f*1.02+sp*255+rim);o[i+3]=255}
+ G.putImageData(img,0,0);
+ /* contorno fino e escuro em volta de tudo, desenhado já na resolução maior */
+ const out=canvas(W,H),q=out.getContext("2d"),T=Math.round(HS*.75);
+ for(const[a,b]of[[T,0],[-T,0],[0,T],[0,-T],[T-1,T-1],[1-T,T-1],[T-1,1-T],[1-T,1-T]])q.drawImage(hi,a,b);
+ q.globalCompositeOperation="source-in";q.fillStyle=INK;q.fillRect(0,0,W,H);q.globalCompositeOperation="source-over";q.drawImage(hi,0,0);
+ out.hiRes=HS;return out;
+}
 function sprite(o,kind,view,s){
  const key=[o.id,o.head,o.body,o.legs,o.feet,o.cape?1:0,o.ornament?1:0,o.hat===false?0:1,view,s].join("|"),hit=cache.get(key);if(hit)return hit;
  const W=GW+PAD*2,H=GH+PAD*2,base=canvas(W,H),out=canvas(W,H);if(!base||!out)return null;
@@ -162,10 +204,11 @@ function sprite(o,kind,view,s){
    if(on("scythe")){const d=back?-1:1;P(hx,9,1,1,WOOD_D);for(let i=0;i<3;i++)P(hx+d*(i+1),8+i,1,1,STEEL);P(hx+d,9,1,1,STEEL);P(hx+d*3,11,1,1,lt(STEEL,.4))}
    if(!back)P(hx-1,22,2,2,SKIN)}
   if(on("fireball")){const fx=back?16:side?12:0;P(fx,19,4,4,FIRE);P(fx+1,20,2,2,FIRE_L);P(fx+1,18,2,1,"#ff5a1f")}}
- /* contorno escuro de 1 pixel */
- const q=out.getContext("2d");for(const[a,b]of[[1,0],[-1,0],[0,1],[0,-1]])q.drawImage(base,a,b);
- q.globalCompositeOperation="source-in";q.fillStyle=INK;q.fillRect(0,0,W,H);q.globalCompositeOperation="source-over";q.drawImage(base,0,0);
- if(cache.size>600)cache.clear();cache.set(key,out);return out;
+ /* acabamento com volume (luz, sombra e brilho); sem suporte a leitura de pixels cai no contorno simples de 1 pixel */
+ let fin=null;try{fin=shade3d(base)}catch(e){fin=null}
+ if(!fin){const q=out.getContext("2d");for(const[a,b]of[[1,0],[-1,0],[0,1],[0,-1]])q.drawImage(base,a,b);
+  q.globalCompositeOperation="source-in";q.fillStyle=INK;q.fillRect(0,0,W,H);q.globalCompositeOperation="source-over";q.drawImage(base,0,0);fin=out}
+ if(cache.size>420){let n=0;for(const k of cache.keys()){cache.delete(k);if(++n>=105)break}}cache.set(key,fin);return fin;
 }
 function draw(ctx,x,y,size,value,voc,dir="south",time=0,moving=false){
  const o=normalize(value,voc),kind=catalog.find(c=>c.id===o.id),u=size/20;
@@ -173,7 +216,7 @@ function draw(ctx,x,y,size,value,voc,dir="south",time=0,moving=false){
  const img=sprite(o,kind,view,f);if(!img)return;
  /* passada: o corpo sobe quando a perna passa no ar, inclina para a frente de lado e ginga de frente/costas */
  const bob=moving?(contact?0:-u*.9):Math.round(Math.sin(time*2.4))*u*.35;
- ctx.save();ctx.imageSmoothingEnabled=false;
+ ctx.save();ctx.imageSmoothingEnabled=!!img.hiRes;if(img.hiRes)ctx.imageSmoothingQuality="high";
  {const cx=x+size/2,fy=y+size,lean=moving?(view==="east"?(dir==="east"?.08:-.08):(f<=2?.045:-.045)):0,sq=moving?(contact?.035:-.02):Math.sin(time*2.4)*.015;
   ctx.translate(cx,fy);ctx.rotate(lean);ctx.scale(1+sq*.5,1-sq);ctx.translate(-cx,-fy)}
  if(dir==="west"){ctx.translate(2*x+size,0);ctx.scale(-1,1)}
