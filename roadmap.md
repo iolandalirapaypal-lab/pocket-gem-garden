@@ -221,3 +221,6 @@
 # Imbuimentos (Charles e Russel)
 - [x] 13 imbuimentos (Velocidade, Vida, Mana, Crítico, 4 habilidades, 5 proteções) em 3 níveis com itens de criaturas e ouro; até 8 guardados e 4 ligados; tempo só corre em combate; Russel cancela. 16 testes passaram e as janelas foram testadas no navegador.
 - [ ] Testar numa caçada real com conta logada: aguardando o dono entrar no jogo.
+
+# Outfits do Lawl MMORPG
+- [x] 14 outfits (Villager, Knight, Paladin, Wizard, Amazon, Summoner, Slayer, Primal, Warlock, Sensei, Hunter, Hitman, Voyager, Sublime) com 2 addons cada, redesenhados no estilo do jogo; grátis no guarda-roupa (7 testes passaram, aplicado no jogo).

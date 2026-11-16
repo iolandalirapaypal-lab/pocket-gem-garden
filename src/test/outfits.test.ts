@@ -33,3 +33,18 @@ describe("mage hat toggle", () => {
     expect(outfits.normalize({ id: "knight", hat: false }, "knight")).not.toHaveProperty("hat");
   });
 });
+describe("Lawl MMORPG outfits", () => {
+  const cat = (scope as unknown as { LawlOutfits: { catalog: { id: string; name: string; addons?: string[] }[] } }).LawlOutfits.catalog;
+  it("offers the 14 Lawl outfits, each with two addons", () => {
+    const lawl = cat.filter(c => c.addons);
+    expect(lawl.map(c => c.name)).toEqual(["Villager", "Knight", "Paladin", "Wizard", "Amazon", "Summoner", "Slayer", "Primal", "Warlock", "Sensei", "Hunter", "Hitman", "Voyager", "Sublime"]);
+    expect(lawl.every(c => c.addons!.length === 2)).toBe(true);
+  });
+  it("keeps the original 8 outfits so old saves still load", () => {
+    expect(cat.slice(0, 8).map(c => c.id)).toEqual(["citizen", "knight", "hunter", "mage", "druid", "assassin", "noble", "barbarian"]);
+  });
+  it("saves a Lawl outfit with both addons switched on", () => {
+    const look = { id: "warlock", head: 3, body: 0, legs: 3, feet: 0, cape: true, ornament: true };
+    expect(outfits.normalize(look, "sorcerer")).toEqual(look);
+  });
+});
