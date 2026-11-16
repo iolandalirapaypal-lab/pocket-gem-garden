@@ -1,0 +1,17 @@
+[
+ {"capability":"code","source":"archive: TanStack Start app; game in public/reinos.html + public/*.js, sprites, React shell, tests","outcome":"migrate","status":"verified","next_action":"none (build OK, 60 test files / 696 tests pass, sign-in screen renders on desktop and phone)"},
+ {"capability":"schema","source":"rebuilt from types.ts, src/test/sql fixtures, tests and call sites (archive had no migrations)","outcome":"migrate","status":"verified","next_action":"none (15 migrations applied to Lovable Cloud, identical to the tested drafts)"},
+ {"capability":"records","source":"previous database; no export attached","outcome":"migrate","status":"pending","next_action":"request per-table CSV exports; sanitize and import in dependency order"},
+ {"capability":"auth identities","source":"previous users; no export attached","outcome":"migrate","status":"pending","next_action":"request users export (original IDs + emails); map to new auth IDs"},
+ {"capability":"auth providers (email/password, Google)","source":"src/routes/index.tsx, src/integrations/lovable","outcome":"migrate","status":"verified","next_action":"none (both enabled; sign-in screen shows both)"},
+ {"capability":"first-login password setup","source":"'Primeiro acesso ou esqueceu a senha?' + /redefinir-senha","outcome":"migrate","status":"pending","next_action":"verify with an imported user after import"},
+ {"capability":"authorization","source":"RLS + security definer lawl_* actions; GM owner by confirmed email","outcome":"migrate","status":"verified","next_action":"none (anon table read refused; RLS on every table; protected actions covered by tests)"},
+ {"capability":"realtime lawl-world","source":"broadcast channel","outcome":"migrate","status":"pending","next_action":"verify with two signed-in players"},
+ {"capability":"payments InfinitePay","source":"src/lib/gem-shop.*, /api/public/infinitepay-webhook","outcome":"preserve","status":"pending","next_action":"needs INFINITEPAY_HANDLE via secure form before live payment test"},
+ {"capability":"public endpoints/webhooks","source":"/api/public/infinitepay-webhook","outcome":"preserve","status":"pending","next_action":"route answers safely on unknown orders; update webhook URL in InfinitePay after publishing"},
+ {"capability":"file bytes/storage","source":"11 images (potions, monsters atlas) from the old project","outcome":"migrate","status":"verified","next_action":"none (bytes fetched with matching sizes, re-uploaded to this project, references updated, served 200)"},
+ {"capability":"schedules","source":"none found","outcome":"n/a","status":"verified","next_action":"none"},
+ {"capability":"secrets","source":"INFINITEPAY_HANDLE (user-owned); LOVABLE_* are platform metadata","outcome":"preserve","status":"pending","next_action":"request through secure form before payment verification"},
+ {"capability":"cutover","source":"old project","outcome":"migrate","status":"pending","next_action":"publish after data import; repoint InfinitePay webhook"},
+ {"capability":"verification","source":"tests + preview","outcome":"migrate","status":"pending","next_action":"signed-in play check needs a real account (no users yet)"}
+]
