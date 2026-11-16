@@ -545,7 +545,7 @@ function onTurn(){land()?enter():exit()}
 matchMedia("(orientation:landscape)").addEventListener("change",onTurn);
 addEventListener("pointerdown",enter,{capture:true});addEventListener("touchend",enter,{capture:true});
 })();</script>
-<script>function lawlTile(w,h){return Math.max(18,Math.floor(Math.min(w/11,h/9)))}</script>
+<script>/* Câmera afastada como no cliente clássico: cerca de 12,5 quadrados na altura deitado (11 na largura em pé), personagem sempre no centro */function lawlTile(w,h){return Math.max(18,Math.floor(Math.min(w/11,h/12.5)))}</script>
 <script>/* Botões grandes do HUD: ícone, nome e contador, só redesenha quando muda */
 function hudTile(el,ic,nm,ct){if(!el)return;const has=ct!==""&&ct!=null,k=ic+"|"+nm+"|"+(has?ct:"");if(el.dataset.hk===k)return;el.dataset.hk=k;el.classList.add("hud-tile");el.innerHTML=`<span class="ic">${ic}</span><span class="nm"></span>${has?'<b class="ct"></b>':""}`;el.querySelector(".nm").textContent=nm;if(has)el.querySelector(".ct").textContent=ct;el.setAttribute("aria-label",has?`${nm} (${ct})`:nm)}
 /* Área de magia no chão: segurar o botão mostra onde vai acertar; ao lançar, pisca na cor da magia */
@@ -1883,10 +1883,13 @@ function draw(ctx,w,h){
   {const mv0=Math.abs(x-Math.round(x))+Math.abs(y-Math.round(y))>.02,k=mv0?1-Math.abs(Math.sin(T*9+x*1.7+y*.9))*.2:1;const sg=ctx.createRadialGradient(sx+8*u,sy+14.5*u,0,sx+8*u,sy+14.5*u,5.5*u*k);sg.addColorStop(0,"rgba(0,0,0,.45)");sg.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=sg;ctx.save();ctx.translate(sx+8*u,sy+14.5*u);ctx.scale(1,.32);ctx.translate(-(sx+8*u),-(sy+14.5*u));ctx.beginPath();ctx.arc(sx+8*u,sy+14.5*u,5.5*u*k,0,7);ctx.fill();ctx.restore()}
   if(isT){ctx.strokeStyle=`rgba(255,60,60,${.6+Math.sin(T*8)*.4})`;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(sx+8*u,sy+14.5*u,7*u,2.6*u,0,0,7);ctx.stroke()}
   /* Arcos de vida (verde, esquerda) e mana (rosa, direita) em volta do próprio personagem */
-  if(curEnt===p&&max&&kind.startsWith("hero")){const ax=sx+tile/2,ay=sy+tile*.45,ar=tile*1.25,sp=.62,hp0=clamp(p.hp/maxHp(),0,1),mp0=clamp(p.mp/maxMp(),0,1);ctx.save();ctx.lineCap="butt";
-   const arc=(a0,a1,ccw,col,wd)=>{ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.beginPath();ctx.arc(ax,ay,ar,a0,a1,ccw);ctx.stroke()};
-   arc(Math.PI-sp,Math.PI+sp,false,"rgba(15,10,25,.55)",tile*.16);arc(sp,-sp,true,"rgba(15,10,25,.55)",tile*.16);
-   if(hp0>0)arc(Math.PI-sp,Math.PI-sp+2*sp*hp0,false,"#3fe03a",tile*.1);if(mp0>0)arc(sp,sp-2*sp*mp0,true,"#e23ad6",tile*.1);ctx.restore()}
+  if(curEnt===p&&max&&kind.startsWith("hero")){const ax=sx+tile/2,ay=sy+tile*.5,ks=Math.min(1,.44*w/(6.4*tile)),D=tile*3.8*ks,ar=tile*2.4*ks,sp=1.13,wd=Math.max(4,tile*.34*ks),hp0=clamp(p.hp/maxHp(),0,1),mp0=clamp(p.mp/maxMp(),0,1),N=7;ctx.save();ctx.lineCap="butt";
+   /* Dois arcos separados como no cliente clássico: vida "(" à esquerda e mana ")" à direita, enchendo de baixo para cima, em segmentos */
+   const bar=(cx,left,frac,col,dark)=>{const span=2*sp,at=k=>left?Math.PI-sp+span*k:sp-span*k;
+    const seg=(k0,k1,c,w)=>{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.arc(cx,ay,ar,at(k0),at(k1),!left);ctx.stroke()};
+    seg(0,1,"rgba(0,0,0,.7)",wd+tile*.06);seg(0,1,dark,wd);if(frac>0){seg(0,frac,col,wd);ctx.globalAlpha=.35;seg(0,frac,"#fff",wd*.25);ctx.globalAlpha=1}
+    ctx.strokeStyle="rgba(0,0,0,.55)";ctx.lineWidth=Math.max(1,tile*.02);for(let i=1;i<N;i++){const t=at(i/N),r0=ar-wd/2,r1=ar+wd/2;ctx.beginPath();ctx.moveTo(cx+Math.cos(t)*r0,ay+Math.sin(t)*r0);ctx.lineTo(cx+Math.cos(t)*r1,ay+Math.sin(t)*r1);ctx.stroke()}};
+   bar(ax-D,true,hp0,"#2fd23a","#123a16");bar(ax+D,false,mp0,"#f06ae8","#3a1438");ctx.restore()}
   let lift=0,top=null;
   const mvA=Math.abs(x-Math.round(x))+Math.abs(y-Math.round(y))>.02,eA=curEnt,isHero=kind.startsWith("hero");
   if(eA&&!isHero&&!noShadow){const mdx=eA._lx!==undefined?x-eA._lx:0,mdy=eA._ly!==undefined?y-eA._ly:0;if(Math.abs(mdx)>.001||Math.abs(mdy)>.001){eA.dir4=mobDir4(mdx,mdy);if(Math.abs(mdx)>.001)eA.face=mdx<0?-1:1}eA._lx=x;eA._ly=y;if(mvA)eA._mvAt=T;const mvH=mvA||T-(eA._mvAt??-9)<.18;eA.walkW=(eA.walkW||0)+((mvH?1:0)-(eA.walkW||0))*Math.min(1,_dt*10)}
