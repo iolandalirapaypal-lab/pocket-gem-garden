@@ -228,3 +228,8 @@
 # Visual 3D dos personagens
 - [x] Personagens e outfits com volume (luz, sombra, brilho e contorno fino), visto de cima com profundidade.
 - [ ] Próximos passos possíveis (aguardando o dono escolher): NPCs da cidade, monstros, chão/paredes.
+
+# Estilo pixel art
+- [x] Personagens em pixel art nítido (luz em faixas, contorno seletivo)
+- [x] Arcos de vida/mana em blocos de pixel
+- [x] Letras em fonte pixel (Jersey 10)
