@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 
 type Message = { id: number; user_id: string; name: string; channel: string; recipient_name: string | null; body: string; created_at: string };
-type ChatWindow = Window & { lawlChatSend?: (text: string) => Promise<void>; lawlOpenChat?: (channel?: string) => void; lawlChatUnread?: number; lawlSystemLog?: (text: string) => void };
+type ChatWindow = Window & { lawlChatSend?: (text: string) => Promise<void>; lawlOpenChat?: (channel?: string, to?: string) => void; lawlChatUnread?: number; lawlSystemLog?: (text: string) => void };
 const channels = [['system','Servidor'],['local','Local'],['world','Mundo'],['help','Ajuda'],['advertising','Anúncios'],['private','Privado'],['guild','Guilda']] as const;
 
 export function GameChat({ userId, slot }: { userId: string; slot: number }) {
@@ -68,7 +68,7 @@ export function GameChat({ userId, slot }: { userId: string; slot: number }) {
   }, [slot]);
   useEffect(() => {
     const w = window as ChatWindow;
-    w.lawlOpenChat = ch => { if (ch && channels.some(([id]) => id === ch)) { setChannel(ch); setError(''); setRules(false); } setOpen(true); };
+    w.lawlOpenChat = (ch, to) => { if (ch && channels.some(([id]) => id === ch)) { setChannel(ch); setError(''); setRules(false); } if (ch === 'private' && typeof to === 'string' && to.trim()) setTarget(to.trim().slice(0, 30)); setOpen(true); };
     return () => { delete w.lawlOpenChat; delete w.lawlChatUnread; };
   }, []);
   useEffect(() => { (window as ChatWindow).lawlChatUnread = unread; }, [unread]);

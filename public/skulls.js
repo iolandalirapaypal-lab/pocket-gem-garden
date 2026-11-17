@@ -20,6 +20,12 @@ function canAttack(o){
 function damage(raw,o){o=o||{};const r=Math.min(500,Math.max(0,Number(raw)||0));
  const base=Math.max(1,Math.round(r-(Number(o.shielding)||0)*.25-(Number(o.def)||0)));
  return Math.max(1,Math.round(base*(o.black?1:.5)))}
+/* Tocar em outro jogador (como no Lawl): "ignore" deixa o toque passar (andar), "all" ataca, "marked" ataca só quem tem caveira ou atacou você; o resto abre o perfil.
+   canHit=false (zona de proteção, GameMaster, alvo atual) sempre abre o perfil. */
+function tapAction(o){o=o||{};const rev=!!o.attacker;
+ if(o.mode==="ignore"&&!rev)return "walk";
+ if(o.canHit&&(o.mode==="all"||(o.mode==="marked"||o.mode==="ignore")&&(rev||!!norm(o.mark))))return "attack";
+ return "profile"}
 function losesItems(k){k=norm(k);return k==="red"||k==="black"}
 /* Morrer com caveira vermelha ou preta: perde tudo que carrega (ouro, gemas e depot ficam). Preta: renasce com no máximo 40 de vida e sem mana. */
 function deathPenalty(p,k){k=norm(k);const out={lost:false,items:0,black:k==="black"};if(!p||!losesItems(k))return out;
@@ -39,5 +45,5 @@ function draw(ctx,x,y,s,k){k=norm(k);if(!k||!ctx)return;const c=COLORS[k],f=c[0]
  ctx.restore()}
 function svg(k,size){k=norm(k);if(!k)return "";const c=COLORS[k],z=Number(size)||14;
  return `<svg width="${z}" height="${z}" viewBox="0 0 20 20" style="vertical-align:-2px" role="img" aria-label="${NAMES[k]}"><circle cx="10" cy="10" r="10" fill="${c[1]}"/><circle cx="10" cy="8.6" r="6.6" fill="${c[0]}"/><rect x="6.2" y="11.8" width="7.6" height="5" fill="${c[0]}"/><circle cx="7.3" cy="8.8" r="1.7" fill="${c[1]}"/><circle cx="12.7" cy="8.8" r="1.7" fill="${c[1]}"/><path d="M10 10.6 9.1 12.4h1.8z" fill="${c[1]}"/><rect x="8" y="14.2" width=".5" height="2.6" fill="${c[1]}"/><rect x="9.75" y="14.2" width=".5" height="2.6" fill="${c[1]}"/><rect x="11.5" y="14.2" width=".5" height="2.6" fill="${c[1]}"/></svg>`}
-root.LawlSkulls={RULES,NAMES,norm,name,canAttack,damage,losesItems,deathPenalty,left,draw,svg};
+root.LawlSkulls={RULES,NAMES,norm,name,canAttack,tapAction,damage,losesItems,deathPenalty,left,draw,svg};
 })(typeof window!=="undefined"?window:globalThis);

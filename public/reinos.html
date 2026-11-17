@@ -290,6 +290,18 @@ button.inv-cell:hover:not(:disabled){background:var(--inv-cell-hi);border-color:
 #modal.npcx #modalBody>*{flex-shrink:0}
 #modal.npcx .small{color:var(--inv-soft)}
 #modal.npcx .row{border-bottom-color:#ffffff26}
+#modal.npcx.plk .dialog{width:min(640px,100%)}
+.plx{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:center;padding:4px}
+.plx-info{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;min-width:0}
+.plx-info>b:first-child{font-size:17px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.plx-info canvas{width:96px;height:120px;image-rendering:pixelated}
+.plx-sk{display:flex;align-items:center;gap:6px;font-weight:bold}
+.plx-acts{display:flex;flex-direction:column;gap:7px}
+#modal .plx-acts button{padding:10px 8px;font-size:15px;font-weight:bold;border-radius:8px;background:var(--inv-tab);border:2px solid var(--inv-panel-edge);color:var(--inv-ink);box-shadow:inset 0 -3px 0 #0003}
+#modal .plx-acts button:hover:not(:disabled){background:var(--inv-panel-hi);border-color:var(--inv-ink)}
+#modal .plx-acts button.r{background:var(--hud-alert);border-color:var(--hud-alert-edge)}
+.plx-tip{margin:8px 4px 0;text-align:center}
+@media (max-width:520px){.plx{grid-template-columns:1fr}}
 .shx{display:flex;flex-direction:column;gap:10px;flex:1 1 auto!important;min-height:0}
 .shx-tabs{display:flex;justify-content:center;gap:4px;background:var(--inv-dark);border-radius:8px;padding:4px 6px 0;overflow-x:auto;scrollbar-width:none}
 .shx-tabs::-webkit-scrollbar{display:none}
@@ -1979,7 +1991,7 @@ function draw(ctx,w,h){
  const vg=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.75);vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(0,0,0,.55)");ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);
 }
 let modalTitleRaw="";
-function openModal(title,html,kind=""){clearInterval(tkxTimer);modalKind=kind;$("#modal").classList.toggle("npcx",kind==="npc"||kind==="shop");modalTitleRaw=title;$("#modalTitle").textContent=title;$("#modalBody").innerHTML=html;$("#modalBody").onclick=null;$("#modal").classList.remove("hidden");renderHubBar()}
+function openModal(title,html,kind=""){clearInterval(tkxTimer);modalKind=kind;$("#modal").classList.toggle("npcx",kind==="npc"||kind==="shop"||kind==="player");$("#modal").classList.toggle("plk",kind==="player");modalTitleRaw=title;$("#modalTitle").textContent=title;$("#modalBody").innerHTML=html;$("#modalBody").onclick=null;$("#modal").classList.remove("hidden");renderHubBar()}
 function closeModal(){clearInterval(tkxTimer);$("#modal").classList.add("hidden");$("#modal").classList.remove("hub","npcx");modalKind="";modalTitleRaw="";renderUI()}
 /* ===== Painel do jogador no estilo menu azul: Servidores, Loja, Grind, Status, Inventário, Mercado e Opções.
    Botões de funções que o jogo ainda não tem ficam visíveis com data-soon e não fazem nada de propósito. ===== */
@@ -2855,6 +2867,7 @@ $("#canvas").addEventListener("pointerdown",e=>{if(!p||modalKind||e.isPrimary===
  const C=window.__lawlCam&&window.__lawlCam.init?window.__lawlCam:p;const fx=(e.clientX-r.left-ox)/tile+C.x,fy=(e.clientY-r.top-oy)/tile+C.y;
  let nb=null,nd=1e9;for(const n of npcs){const d=Math.hypot(n.x+.5-fx,n.y+.4-fy);if(d<nd){nd=d;nb=n}}
  if(nb&&nd<=0.85){if(dist(nb,p)<=1){talkTo(nb);return}requestWalk(nb.x,nb.y);if(autoPath.length){pendingTalk=nb.id;tapFx={x:nb.x,y:nb.y,t:performance.now()}}return}
+ if(window.__lawlPlayerTap&&window.__lawlPlayerTap(fx,fy)){autoPath=[];autoDest=null;return}
  let best=null,bd=1e9;for(const m of mobs){if(LawlMonsters.hidden(m))continue;const d=Math.hypot(m.x+.5-fx,m.y+.5-fy);if(d<bd){bd=d;best=m}}
  if(best&&bd<=0.9){autoPath=[];autoDest=null;target=best;say(`Alvo: ${best.t.name}`);renderUI();return}
  requestWalk(Math.floor(fx),Math.floor(fy));if(autoDest)tapFx={x:autoDest[0],y:autoDest[1],t:performance.now()}});
@@ -3148,7 +3161,7 @@ function pvpReceive(d,from){if(!p||isGM()||duel===from||p.hp<=0)return;const o=o
  const base=SK.damage(d.dmg,{shielding:skillEff("shielding"),def:equipStat("def"),black:PVP.me.skull==="black"}),mix=LawlItems.sanitizeMix(d.mix);
  const pel=LawlItems.RES_NAME[d.el]?d.el:"phys",dmg=spellTaken(LawlStances.taken(mix?LawlItems.mixedResist(base,mix,resPct):resHit(base,pel),p.stance),null);
  PVP.hitBy.set(from,Date.now());lastCombatAt=performance.now();hurtMe(dmg,pel);addSkill("shielding",1);renderPvpBadge();try{fxHit(p,o)}catch(e){}
- const w=PVP.warned.get(from)||0;if(Date.now()-w>30000){PVP.warned.set(from,Date.now());say(`⚠️ ${nameOf(from)} está atacando você! Toque em ⚔️ Revidar (ou segure o dedo sobre ele) para revidar sem ganhar caveira.`)}}
+ const w=PVP.warned.get(from)||0;if(Date.now()-w>30000){PVP.warned.set(from,Date.now());say(`⚠️ ${nameOf(from)} está atacando você! Toque em ⚔️ Revidar (ou toque nele) para revidar sem ganhar caveira.`)}}
 function pvpKilled(d,from){say(d.justified?`⚔️ Você derrotou ${nameOf(from)}.`:`☠️ Você matou ${nameOf(from)} injustamente (+1 frag).`);if(PVP.target===from)PVP.target=null;PVP.lastPoll=0;pvpPoll(true)}
 window.__lawlDeathHook=()=>{const now=Date.now(),killers=[...PVP.hitBy].filter(([,t])=>now-t<SK.RULES.fightMs).map(([id])=>id).slice(0,10);
  const mark=PVP.me.skull,hadPz=PVP.me.pzUntil>now;PVP.hitBy.clear();PVP.target=null;
@@ -3196,7 +3209,7 @@ function openSkulls(){if(!p)return;const m=PVP.me,f=m.frags||{},R=SK.RULES,now=D
   `⚖️ Matar quem tem caveira, ou quem atacou você, é justo e não conta frag. Dano entre jogadores é reduzido pela metade.<br>`+
   `🔒 Atacar jogadores bloqueia a entrada em zonas de proteção por 1 minuto (15 minutos após uma morte injusta).<br>`+
   `💰 Ouro, gemas e o que estiver guardado no depot nunca são perdidos.<br>`+
-  `👆 Para atacar, segure o dedo sobre o jogador por 2 segundos ou use 👥 Online.</div>`);
+  `👆 Tocar em um jogador abre o perfil dele. Para atacar, toque no ícone do capacete e escolha <b>Atacar marcados</b> (só quem tem caveira ou atacou você) ou <b>Atacar todos</b>; aí o toque ataca direto. Segure 2 segundos sobre o jogador para ver o perfil em qualquer modo. Em zona de proteção o toque sempre abre o perfil.</div>`);
  $("#modalBody").onclick=e=>{const b=e.target.closest("[data-pvp]");if(b&&b.dataset.pvp==="stop"){pvpStop("⚔️ Ataque interrompido.");openSkulls()}}}
 window.__lawlOpenSkulls=openSkulls;
 window.__lawlChat=t=>{if(GM?.status.muted)return say("Vous êtes silenciado.".replace("Vous êtes","Você está"));send("chat",{text:t.slice(0,120)})};
@@ -3265,7 +3278,7 @@ const ask=(q,yes,no)=>{openModal("👥 Convite",`<p>${escapeHtml(q)}</p><div cla
  $("#modalBody").onclick=e=>{const a=e.target.dataset.a;if(!a)return;closeModal();a==="y"?yes():no&&no()}};
 N.onMsg=(t,d,from)=>{if(!p||!d||(d.to&&d.to!==N.me))return;
  if(t==="loot"){if(d.z===p.z&&Math.abs(d.x-p.x)<=24&&Math.abs(d.y-p.y)<=24&&window.__lawlGroundRefresh)window.__lawlGroundRefresh();return}
- if(t==="pos"){if(from===GM?.status.gmId){d.name="🛡️ GameMaster";d.invisible?gmHidden.add(from):gmHidden.delete(from)}else delete d.invisible;others.set(from,{...(others.get(from)||{}),...d,id:from,seen:Date.now(),party:party.has(from)});return}
+ if(t==="pos"){if(!others.has(from)&&from!==GM?.status.gmId&&isFriend(d.name))say(`⭐ Seu amigo ${String(d.name||"").slice(0,30)} está online.`);if(from===GM?.status.gmId){d.name="🛡️ GameMaster";d.invisible?gmHidden.add(from):gmHidden.delete(from)}else delete d.invisible;others.set(from,{...(others.get(from)||{}),...d,id:from,seen:Date.now(),party:party.has(from)});return}
  if(Object.prototype.hasOwnProperty.call(MOBMSG,t)){MOBMSG[t](d,from);return}
  if(Object.prototype.hasOwnProperty.call(TRMSG,t)){TRMSG[t](d,from);return}
  const nm=nameOf(from);
@@ -3598,22 +3611,59 @@ const TRMSG={
  trCancel:(d,from)=>{if(!tr||tr.id!==d.id||tr.with!==from)return;if(tr.myConf){trResolve();return}say(`🤝 ${nameOf(from)} cancelou a troca.`);tr=null;if(modalKind==="trade")closeModal()},
  trDone:(d)=>{if(p.tradeEscrow&&p.tradeEscrow.id===d.id||tr&&tr.id===d.id)trResolve()}
 };
+/* ===== Perfil do jogador (tocar em outro personagem), como no Lawl ===== */
+const FR_KEY=()=>"lawl-friends:"+(p&&p.name||""),frNorm=s=>String(s||"").trim().toLowerCase();
+function friends(){try{const a=JSON.parse(localStorage.getItem(FR_KEY())||"[]");return Array.isArray(a)?a.filter(x=>typeof x==="string").slice(0,100):[]}catch(e){return []}}
+function isFriend(name){const n=frNorm(name);return !!n&&friends().some(f=>frNorm(f)===n)}
+function toggleFriend(name){const n=frNorm(name);if(!n)return;let a=friends();
+ if(a.some(f=>frNorm(f)===n)){a=a.filter(f=>frNorm(f)!==n);say(`⭐ ${name} saiu da sua lista de amigos.`)}else{a.push(String(name).slice(0,30));say(`⭐ ${name} foi adicionado aos seus amigos.`)}
+ try{localStorage.setItem(FR_KEY(),JSON.stringify(a))}catch(e){}}
+const PVP_TIP={none:"Modo de ataque: não atacar. Para atacar, toque no ícone do capacete e escolha atacar marcados ou todos; depois é só tocar no jogador.",
+ ignore:"Modo de ataque: ignorar jogadores. Tocar em jogadores apenas anda; segure 2 segundos para abrir o perfil.",
+ marked:"Modo de ataque: marcados. Tocar em quem tem caveira (ou atacou você) ataca direto.",
+ all:"Modo de ataque: todos. Tocar em um jogador fora da zona de proteção ataca direto; atacar quem não tem caveira dá caveira branca."};
+function openPlayer(id){const o=others.get(id);if(!p||!o||o.offline||(gmHidden.has(id)&&!isGM()))return;
+ const isG=id===GM?.status.gmId,mark=PVP.marks.get(id)||"",rev=pvpIsAttacker(id),fol=window.__lawlFollow,inParty=party.has(id),v=vocations[o.voc],nm=escapeHtml(o.name||"Jogador");
+ const btn=(a,label,cls,dis)=>`<button type="button" class="hx${cls?" "+cls:""}" data-pa="${a}"${dis?" disabled":""}>${label}</button>`;
+ const acts=isG?`<p class="small">O GameMaster cuida do servidor e não participa de trocas, grupos ou combates.</p>`:
+  btn("msg","💬 Mensagem")+btn("friend",isFriend(o.name)?"⭐ Remover amigo":"⭐ Adicionar amigo")+btn("trade","🤝 Trocar","",!!(tr||p.tradeEscrow))+
+  btn("follow",fol&&fol.is(id)?"✖ Parar de seguir":"👣 Seguir")+(inParty?btn("leave","👥 Sair do grupo"):btn("party","👥 Convidar para grupo"))+
+  (PVP.target===id?btn("stop","✖ Parar ataque","r"):rev&&!isGM()?btn("atk","⚔️ Revidar","r"):"");
+ const skull=mark?`<div class="plx-sk">${SK.svg(mark,22)} ${SK.name(mark)}</div>`:`<div class="plx-sk small">Sem caveira</div>`;
+ openModal(o.name||"Jogador",`<div class="plx"><div class="plx-info"><b>${nm}</b><span>Nível: ${o.level|0}</span><canvas id="plxHero" width="160" height="200" aria-label="Outfit de ${nm}"></canvas><b>${isG?"🛡️ GameMaster":escapeHtml(v?v.name:"Aventureiro")}</b>${isG?"":skull}`+
+  `${rev&&!isG?`<div class="small">⚔️ Atacou você: revidar não dá caveira</div>`:""}${inParty?`<div class="small">👥 No seu grupo</div>`:""}<div class="small">${o.z===p.z?dist(o,p)+" passos":"outro andar"}</div></div><div class="plx-acts">${acts}</div></div>`+
+  (isG?"":`<p class="small plx-tip">🎯 ${PVP_TIP[PVP.mode]}</p>`),"player");
+ const cv=$("#plxHero"),ctx=cv&&cv.getContext("2d");if(ctx)try{LawlOutfits.draw(ctx,25,32,110,LawlOutfits.normalize(o.outfit,o.voc),o.voc,"south",0,false)}catch(e){}
+ $("#modalBody").onclick=e=>{const b=e.target.closest("[data-pa]");if(!b||b.disabled)return;const a=b.dataset.pa,cur=others.get(id);
+  if(!cur){closeModal();return say(`${o.name||"O jogador"} saiu do jogo.`)}
+  if(a==="msg"){closeModal();try{window.parent.lawlOpenChat?.("private",String(cur.name||""))}catch(_){}return}
+  if(a==="friend"){toggleFriend(cur.name);return openPlayer(id)}
+  if(a==="trade"){closeModal();return trRequest(id)}
+  if(a==="follow"){closeModal();if(fol)fol.is(id)?fol.stop():fol.start(cur);return}
+  if(a==="party"){send("partyInv",{to:id});say(`👥 Convite enviado para ${nameOf(id)}.`);return openPlayer(id)}
+  if(a==="leave"){party.delete(id);send("partyLeave",{to:id});say("👥 Você saiu do grupo.");return openPlayer(id)}
+  if(a==="atk"){closeModal();return void pvpAttack(cur)}
+  if(a==="stop"){pvpStop("⚔️ Ataque interrompido.");return openPlayer(id)}}}
+window.__lawlOpenPlayer=id=>openPlayer(id);
+/* Toque no mapa: o modo de ataque (regras das caveiras) decide entre atacar, abrir o perfil ou ignorar. Zona de proteção sempre abre o perfil. */
+window.__lawlPlayerTap=(fx,fy)=>{if(!p)return false;let best=null,bd=1e9;
+ for(const o of others.values()){if(!o||o.offline||o.z!==p.z||typeof o.x!=="number"||(gmHidden.has(o.id)&&!isGM()))continue;const d=Math.hypot(o.x+.5-fx,o.y+.5-fy);if(d<bd){bd=d;best=o}}
+ if(!best||bd>.9)return false;const o=best,rev=pvpIsAttacker(o.id),mark=PVP.marks.get(o.id);
+ const act=SK.tapAction({mode:PVP.mode,mark,attacker:rev,canHit:!isGM()&&o.id!==GM?.status.gmId&&PVP.target!==o.id&&!safe(p.x,p.y)&&!safe(o.x,o.y)});
+ if(act==="walk")return false;if(act==="attack"){void pvpAttack(o);return true}
+ openPlayer(o.id);return true};
 function openOnline(){
- const list=[...others.values()].sort((a,b)=>(b.z===p.z)-(a.z===p.z)||dist(a,p)-dist(b,p));
+ const list=[...others.values()].filter(o=>!(gmHidden.has(o.id)&&!isGM())).sort((a,b)=>isFriend(b.name)-isFriend(a.name)||(b.z===p.z)-(a.z===p.z)||dist(a,p)-dist(b,p));
  const VI={knight:"🛡️",paladin:"🏹",sorcerer:"🔥",druid:"🌿"};
   const tl=[...trainers.values()];
  openModal(`👥 Online (${list.length+tl.length})`,
-  (list.length?list.map(o=>`<div class="row" style="padding:6px;border-bottom:1px solid #61523f;gap:6px"><span>${VI[o.voc]||""} ${SK.svg(PVP.marks.get(o.id),14)} ${escapeHtml(o.name)} <span class="small">Nv ${o.level} · ${o.z===p.z?dist(o,p)+" passos":"outro andar"}</span></span><span style="display:flex;gap:4px">${party.has(o.id)?`<button data-act="leave" data-id="${o.id}">Sair do grupo</button>`:`<button data-act="party" data-id="${o.id}">👥 Grupo</button>`}<button data-act="trade" data-id="${o.id}" ${tr||p.tradeEscrow?"disabled":""}>🤝 Trocar</button><button data-act="pvp" data-id="${o.id}">🗡️ Atacar</button></span></div>`).join(""):(tl.length?"":`<p class="small">Ninguém mais online agora.</p>`))+
+  (list.length?list.map(o=>`<button type="button" data-act="open" data-id="${o.id}" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:6px;text-align:left;padding:8px;margin:0 0 4px"><span>${isFriend(o.name)?"⭐ ":""}${VI[o.voc]||""} ${SK.svg(PVP.marks.get(o.id),14)} ${escapeHtml(o.name)} <span class="small">Nv ${o.level} · ${o.z===p.z?dist(o,p)+" passos":"outro andar"}</span></span><span class="small">${party.has(o.id)?"👥 ":""}Perfil ›</span></button>`).join(""):(tl.length?"":`<p class="small">Ninguém mais online agora.</p>`))+
   tl.map(o=>`<div class="row" style="padding:6px;border-bottom:1px solid #61523f;gap:6px"><span>${VI[o.voc]||""} ${escapeHtml(o.rawName)} <span class="small">Nv ${o.level} · 🏋️ treinando offline · ${Math.max(1,Math.ceil((o.until-Date.now())/60000))} min</span></span></div>`).join("")+
-  `<p class="small" style="margin-top:8px">Para conversar, escreva na caixa de fala. Todos online veem a mensagem.</p><p class="small">🤝 Para negociar ouro, gemas, poções, itens e equipamentos, fique a até ${TR_RANGE} passos do jogador e toque em Trocar.</p><button data-act="hist" style="width:100%;margin-top:6px">📜 Histórico de trocas</button><button data-act="skulls" style="width:100%;margin-top:6px">💀 Caveiras e frags</button>`);
- $("#modalBody").onclick=e=>{const a=e.target.dataset.act,id=e.target.dataset.id;if(!a||e.target.disabled)return;
+  `<p class="small" style="margin-top:8px">👆 Toque em um jogador (aqui ou no mapa) para abrir o perfil: mensagem, amigos, troca, seguir e grupo. ⭐ Amigos aparecem primeiro.</p><button data-act="hist" style="width:100%;margin-top:6px">📜 Histórico de trocas</button><button data-act="skulls" style="width:100%;margin-top:6px">💀 Caveiras e frags</button>`);
+ $("#modalBody").onclick=e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;const a=b.dataset.act,id=b.dataset.id;
   if(a==="hist")return openTradeHistory(false);
   if(a==="skulls")return openSkulls();
-  if(a==="pvp"){closeModal();void pvpAttack(others.get(id));return}
-  if(a==="trade"){trRequest(id);return openOnline()}
-  if(a==="party"){send("partyInv",{to:id});say(`👥 Convite enviado para ${nameOf(id)}.`)}
-  if(a==="leave"){party.delete(id);send("partyLeave",{to:id});say("👥 Você saiu do grupo.")}
-  openOnline()};
+  if(a==="open")return openPlayer(id)};
 }
 $("#onlineTopBtn").onclick=()=>p&&openOnline();
 })();
@@ -3633,21 +3683,19 @@ $("#onlineTopBtn").onclick=()=>p&&openOnline();
   const C=window.__lawlCam&&window.__lawlCam.init?window.__lawlCam:p;const fx=(e.clientX-r.left-ox)/tile+C.x,fy=(e.clientY-r.top-oy)/tile+C.y;
   let best=null,bd=1e9;for(const o of others().values()){if(!o||o.z!==p.z||typeof o.x!=="number")continue;const d=Math.hypot(o.x+.5-fx,o.y+.5-fy);if(d<bd){bd=d;best=o}}
   return best&&bd<=1?best:null}
- function showMenu(o,x,y){closeMenu();menu=document.createElement("div");menu.id="followMenu";menu.style.left=Math.min(x,innerWidth-190)+"px";menu.style.top=Math.min(y,innerHeight-150)+"px";
-  const nm=String(o.rawName||o.name||"Jogador").replace(/[<>&"]/g,"");const on=followId===o.id;
-  menu.innerHTML=`<b style="color:var(--gold,#e8c06a)">${nm}</b><button type="button" data-f="1">${on?"✖ Parar de seguir":"👣 Seguir"}</button>${window.__lawlPvpAttack&&window.__lawlPvpAttacker&&window.__lawlPvpAttacker(o.id)?`<button type="button" data-f="atk">⚔️ Revidar</button>`:window.__lawlPvpAttack&&!(window.__lawlPvpMode&&window.__lawlPvpMode()==="none")?`<button type="button" data-f="atk">🗡️ Atacar</button>`:""}<button type="button" data-f="0">Cancelar</button>`;
-  menu.addEventListener("pointerdown",e=>e.stopPropagation());
-  menu.onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;if(b.dataset.f==="1"){on?stop("Você parou de seguir."):start(o)}else if(b.dataset.f==="atk"&&window.__lawlPvpAttack)window.__lawlPvpAttack(o);closeMenu()};
-  document.body.appendChild(menu)}
+ /* Segurar 2s sobre um jogador abre o perfil dele em qualquer modo de ataque. */
+ function showMenu(o){if(typeof modalKind!=="undefined"&&modalKind)return;window.__lawlOpenPlayer&&window.__lawlOpenPlayer(o.id)}
+ window.__lawlFollow={start:o=>start(o),stop:()=>stop("Você parou de seguir."),is:id=>!!id&&followId===id};
  const clearHold=()=>{clearTimeout(holdT);holdT=null;ring.classList.remove("on")};
  cv.addEventListener("pointerdown",e=>{closeMenu();if(!p||(typeof modalKind!=="undefined"&&modalKind)||e.isPrimary===false)return;
   if(followId)stop("Você parou de seguir.");
   sx=e.clientX;sy=e.clientY;const o=playerAt(e);if(!o)return;
-  if(window.__lawlPvpMode&&window.__lawlPvpMode()==="ignore"&&!(window.__lawlPvpAttacker&&window.__lawlPvpAttacker(o.id)))return;
-  ring.style.left=sx+"px";ring.style.top=sy+"px";requestAnimationFrame(()=>ring.classList.add("on"));
-  holdT=setTimeout(()=>{clearHold();const o2=playerAt({clientX:sx,clientY:sy})||o;try{autoPath=[];autoDest=null}catch(_){}showMenu(o2,sx,sy)},2000)},true);
+  ring.style.left=sx+"px";ring.style.top=sy+"px";requestAnimationFrame(()=>{if(holdT)ring.classList.add("on")});
+  holdT=setTimeout(()=>{clearHold();const o2=playerAt({clientX:sx,clientY:sy})||o;try{autoPath=[];autoDest=null}catch(_){}showMenu(o2)},2000)},true);
  cv.addEventListener("pointermove",e=>{if(holdT&&Math.hypot(e.clientX-sx,e.clientY-sy)>14)clearHold()});
  ["pointerup","pointercancel","pointerleave"].forEach(t=>cv.addEventListener(t,clearHold));
+ /* A tap that opens a window lifts the finger over the window, not the map: clear the hold ring there too. */
+ ["pointerup","pointercancel"].forEach(t=>window.addEventListener(t,clearHold,true));
  cv.addEventListener("contextmenu",e=>e.preventDefault());
  let lastT="";
  function tick(){if(!followId||!p)return;const o=others().get(followId);
